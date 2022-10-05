@@ -1,4 +1,4 @@
-\documentclass[12pt,a4paper]{article}
+\documentclass[11pt,a4paper]{article}
 \usepackage{fontspec}
 \defaultfontfeatures{Mapping=tex-text}
 \usepackage{xunicode}
@@ -7,6 +7,12 @@
 \usepackage{amsmath}
 \usepackage{amsfonts}
 \usepackage{amssymb}
+\usepackage[colorlinks=true, urlcolor=blue]{hyperref}
+\usepackage[a4paper, inner=2.5cm, outer=2.5cm, top=2cm, bottom=3cm]{geometry}
+
+
+\usepackage{fancyhdr}
+
 \author{Richard Amering}
 \title{Bonus Assignment}
 
@@ -15,5 +21,37 @@
 
 
 \begin{document}
-•
+%\pagestyle{fancy}
+%\fancyhead[R]{Hello}
+%\fancyfoot[L]{\thepage}
+
+\maketitle
+\section{Connectedness and Social Capital Metrics}
+In order to asses different Social Capital statistics, data from Facebook users across the United States was gathered and aggregated according to ZIP codes, counties, high schools and colleges (4 sets in total). The 3 main groups of social capital measurements are Connectedness, Cohesiveness and Civic Engagement, which will be explained in further detail in the following sections. These main groups of measurements can be divided further into more distinct metrics, which will also be partially highlighted. Information about the metrics is gathered from the Readme accompanying the data, as well as the two papers which were published: \\
+\href{https://doi.org/10.1038/s41586-022-04996-4}{Social Capital I: Measurement and Associations with Economic Mobility} \\
+\href{https://doi.org/10.1038/s41586-022-04997-3}{Social Capital II: Determinants of Economic Connectedness}
+
+
+\subsection{Connectedness}
+The extent to which people with different characteristics (e.g., low vs. high socioeconomic status, \textit{SES}) are friends with each other. The \textit{Economic Connectedness} is the share of high (above median) income friends among people with low (below median) incomes. This metric can be divided further into \textit{Exposure} and \textit{Friending Bias}.
+
+Exposure describes the extent to which for example people of high SES are participating in groups with low SES, and also the other way around. Groups are, depending on the datasets, schools, communities, ZIP codes etc.
+
+Friending Bias describes the tendency of low SES people to befriend high SES people at a lower rate than they would befriend people of equal SES.
+
+
+\subsection{Cohesiveness}
+The degree to which friendship networks are clustered into cliques and whether friendships tend to be supported by mutual friends. This metric describes the rate at which two friends of a given person are also friends with each other.
+
+
+
+\subsection{Civic Engagement}
+Indices of participation in civic organizations or volunteering groups. It describes the share of people who are member of a volunteering group.
+
+
+
+\subsection{Economic Mobility} 
+
+\textit{Upward Income Mobility} is another metric measured using anonymous tax records as the average income in adulthood of children who grow up in low-income (25th percentile) families. It describes how likely it is for children of lower class parents to move into high SES during adulthood.
+
 \end{document}
