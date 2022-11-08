@@ -1,0 +1,129 @@
+\section{K-means Expectation-Maximization Algorithm}
+
+\subsection{K-means algorithm}
+
+\subsubsection*{2.1.8-9 Plots and comparison of clustering at 3 clusters}
+
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.9\linewidth]{images/Task2/originalMickeyMouse.png}
+	\caption{Raw data before clustering}
+	\label{fig:rawData}
+\end{figure}
+
+
+
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.9\linewidth]{images/Task2/KMeansMickeyMouse_3clusters.png}
+	\caption{Black dots represent the 3 centroids of the K-means clustered data}
+	\label{fig:KMClusteredData3}
+\end{figure}
+
+When comparing \cref{fig:rawData} with \cref{fig:KMClusteredData3}, it is apparent that the clusters in the left and right ear of the mouse are expanding slightly into the center part of the head, where in the original data, ears are clearly separated from the face. 
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.9\linewidth]{images/Task2/KMeansCostOverIteration.png}
+	\caption{Loss computed for every iteration of the k-means algorithm while clustering the raw data.}
+	\label{fig:KMCostOverIteration}
+\end{figure}
+
+
+\cref{fig:KMCostOverIteration} shows the evolution of cost function for 3 and 6 clusters during iterations. It is apparent that right from the start, the cost of the 6 cluster model is already lower than the cost of the 3 cluster model after convergence. The cost for the converged 6 cluster model (\textasciitilde 5) is approximately half of that of the 3 cluster model (\textasciitilde 10).
+
+
+
+
+
+\subsubsection*{2.1.10 Plots and comparison of clustering at 6 clusters}
+
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.9\linewidth]{images/Task2/KMeansMickeyMouse_6clusters.png}
+	\caption{Black dots represent the 6 centroids of the clustered data}
+	\label{fig:KMClusteredData6}
+\end{figure}
+
+When comparing \cref{fig:KMClusteredData3} with \cref{fig:KMClusteredData6}, it is apparent that now the clusters in the left and right ear of the mouse are very well separated from the center part of the head, while the face is now separated into four different clusters. The better clustering result can also be assessed quantitatively from the cost function after convergence, as shown in \cref{fig:KMCostOverIteration}.
+
+
+
+
+
+
+\subsection{Expectation-Maximization}
+\subsubsection*{2.2.4 Logarithmic likelihood evolution of clustering at 3 and 6 clusters}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.9\linewidth]{images/Task2/EMCostOverIteration.png}
+	\caption{Logarithmic likelihood computed for every iteration of the expectation maximization algorithm while clustering the raw data.}
+	\label{fig:EMCostOverIteration}
+\end{figure}
+
+
+
+\subsubsection*{2.2.5 Plots and comparison of clustering at 3 and 6 clusters}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.9\linewidth]{images/Task2/EMMickeyMouse_3clusters.png}
+	\caption{Black dots represent the 3 centroids of the maximum-likelihood clustered data}
+	\label{fig:EMClusteredData3}
+\end{figure}
+
+
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.9\linewidth]{images/Task2/EMMickeyMouse_6clusters.png}
+	\caption{Black dots represent the 6 centroids of the maximum-likelihood clustered data}
+	\label{fig:EMClusteredData6}
+\end{figure}
+
+
+Expectation maximization clustering with three cluster models (\cref{fig:EMClusteredData3}) already works very well for the mouse dataset, and correctly clusters ears and head according to the raw data.
+
+When stepping up to 6 clusters, as in \cref{fig:EMClusteredData6}, the model even manages to correctly combine some of the noise datapoints into their individual cluster, even though some of these points are very close to the ears of the mouse, as for example in the upper left corner, and on the right below the right ear.
+
+The original value for $\pi$ for the 3 cluster and 6 cluster models were:
+
+ $\rowvec{3}{1/3}{1/3}{1/3}$ and
+ 
+ $\rowvec{6}{1/6}{1/6}{1/6}{1/6}{1/6}{1/6}$, respectively.
+
+After convergence, the $\pi$ values resulted in:
+
+$\rowvec{3}{0.600}{0.198}{0.201}$ and
+
+$\rowvec{6}{0.162}{0.242}{0.198}{0.016}{0.199}{0.182}$, respectively.
+
+
+\subsection{Summary and comparison of two algorithms}
+\subsubsection*{2.3.1 Which algorithm works better?}
+
+From the clustered data shown in \cref{fig:EMClusteredData3} it is immediately apparent that the expectation maximization algorithm yields far better results than the K-means algorithm. The data separated into 3 clusters by expectation maximization is classified way closer to the original data, when compared to the clustering by the k-means algorithm. Not considering the noise points, it is hard to find datapoints that have not been classified according to the original data, while the k-means algorithm incorrectly clustered datapoints from the mouse head into the ears.
+
+
+\subsubsection*{2.3.2 Outliers and robustness}
+By inspecting the raw-data txt-file, it becomes apparent that a few outliers labeled 'noise' have been included in the raw data. Three clusters are not enough to exclude noise points into distinct clusters, but both k-means and expectation maximization do not appear to be thrown off by the included noise or yield unreasonable results. When expanding to 6 cluster models, both k-means and also expectation maximization appear to corretly cluster ears and head into distinct groups. EM even appears to be able to distinct between outliers/noise to some degree and exclude some of the noise points into distinct classes. We would, based on our limited experience, therefore argue, that the likelihood maximization is slightly better suited to deal with noise than the k-means algorithm.
+
+
+\subsubsection*{2.3.3 Difference between K-means and EM algorithms}
+The main difference between this two types of algorithms is that in the EM a correlation matrix is considered. This means that the clusters would have hyper ellipsoidal shape. 
+
+
+\subsubsection*{Bonus 1}
+If all the $\pi$ are the same, then there is no hierarchy in the cluster importance and the relevant criterium to classify the points would be only the distance, and the correlation. Indeed, preventing the update of the $\pi$, the resulting classification is much more similar to the one obtained with the K-means algorithm. 
+
+It is possible to relate the $\pi$ values with the clusters. Considering the case of $K=3$, the cluster with the higher value is the one classifying the head of Mickey mouse. 
+Higher values of $\pi$ might be useful to correctly classify cluster of different size. 
+
+
+\subsubsection*{Bonus 2}
+The assumed covariance matrices in the K-means algorithms are the identity, meaning that no correlation is considered between different components of the data. This feature might ruin the classification if there are dimensions of the data not relevant for the classification, since they will be contributing with equal importance to the decision. 
+The clusters produced by the K-means algorithms tend to be hyper spheres. 
