@@ -16,18 +16,18 @@ import tensorflow as tf
 from tensorflow import keras
 from keras import layers
 from keras.optimizers import Adam
-from keras.losses import MeanSquaredError
+from keras.losses import log_cosh
 
 rng = np.random.default_rng()
 
 
-learning_rate = 0.001
-epochs = 500
+learning_rate = 0.0001
+epochs = 100
 batch_size = 64
 
 #%% helper functions
 
-def test_train_split(dataframe, training_fraction):
+def train_test_split(dataframe, training_fraction):
     n_total_examples = len(dataframe)
     n_training_examples = int(n_total_examples*training_fraction)
     
@@ -51,7 +51,7 @@ def normalize(dataframe):
 zip_datapath = r"../../data/social_capital_zip.csv"
 
 input_labels = [
-    'zip', 'county', 'num_below_p50', 'pop2018', 'ec_zip', 'ec_se_zip',
+    'ec_zip', 'ec_se_zip',
     'nbhd_ec_zip', 'ec_grp_mem_zip', 'ec_high_zip', 'ec_high_se_zip',
     'nbhd_ec_high_zip', 'ec_grp_mem_high_zip', 'exposure_grp_mem_zip',
     'exposure_grp_mem_high_zip', 'nbhd_exposure_zip', 'bias_grp_mem_zip',
@@ -71,7 +71,7 @@ selected_data = raw_data[selected_labels]
 cleaned_data = selected_data.dropna()
 
 normalized_data = normalize(cleaned_data)
-set_train, set_test = test_train_split(normalized_data, 0.8)
+set_train, set_test = train_test_split(normalized_data, 0.8)
 
 X_train = set_train[input_labels]
 X_test = set_test[input_labels]
@@ -83,14 +83,14 @@ y_test = set_test[predict_labels]
 model = tf.keras.Sequential()
 model.add(keras.Input(shape=(len(input_labels),)))
 
-model.add(layers.Dense(units=64, activation="relu"))
-model.add(layers.Dense(units=64, activation="relu"))
+model.add(layers.Dense(units=8, activation="sigmoid"))
+model.add(layers.Dense(units=8, activation="sigmoid"))
 
 model.add(layers.Dense(units=len(predict_labels)))
 
 model.compile(
     optimizer=Adam(learning_rate),
-    loss="MeanSquaredError"
+    loss=log_cosh
 )
 
 
