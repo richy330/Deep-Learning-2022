@@ -15,15 +15,17 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 from keras import layers
-from tensorflow.keras.optimizers import Adam
+from keras.optimizers import Adam
+from keras.losses import MeanSquaredError
 
 rng = np.random.default_rng()
 
 
-learning_rate = 0.01
-epochs = 100
+learning_rate = 0.001
+epochs = 500
 batch_size = 64
 
+#%% helper functions
 
 def test_train_split(dataframe, training_fraction):
     n_total_examples = len(dataframe)
@@ -44,35 +46,31 @@ def normalize(dataframe):
 
 
 
-# plt.close('all')
-# figsize = [12, 8]
-# fontsize = 18
-# dpi = 200
 
-# pylab.rcParams.update({
-#     'figure.figsize': figsize,
-#     'legend.fontsize': fontsize,
-#     'axes.labelsize': fontsize,
-#     'axes.titlesize': fontsize,
-#     'xtick.labelsize': fontsize,
-#     'ytick.labelsize': fontsize,
-#     'savefig.dpi': dpi
-# })
-
-
-
+#%% loading and preparing datasets
 zip_datapath = r"../../data/social_capital_zip.csv"
 
-input_labels = ["clustering_zip", "support_ratio_zip"]
+input_labels = [
+    'zip', 'county', 'num_below_p50', 'pop2018', 'ec_zip', 'ec_se_zip',
+    'nbhd_ec_zip', 'ec_grp_mem_zip', 'ec_high_zip', 'ec_high_se_zip',
+    'nbhd_ec_high_zip', 'ec_grp_mem_high_zip', 'exposure_grp_mem_zip',
+    'exposure_grp_mem_high_zip', 'nbhd_exposure_zip', 'bias_grp_mem_zip',
+    'bias_grp_mem_high_zip', 'nbhd_bias_zip', 'nbhd_bias_high_zip',
+    'clustering_zip', 'support_ratio_zip'
+]
+
 predict_labels = ["volunteering_rate_zip", "civic_organizations_zip"]
+
+
 selected_labels = [*input_labels, *predict_labels]
 
 
 
 raw_data = pd.read_csv(zip_datapath)
-cleaned_data = raw_data.dropna(subset=selected_labels, inplace=False)
+selected_data = raw_data[selected_labels]
+cleaned_data = selected_data.dropna()
 
-normalized_data = normalize(raw_data)
+normalized_data = normalize(cleaned_data)
 set_train, set_test = test_train_split(normalized_data, 0.8)
 
 X_train = set_train[input_labels]
@@ -81,34 +79,62 @@ y_train = set_train[predict_labels]
 y_test = set_test[predict_labels]
 
 
-# building up the model
+#%% building and training the model
 model = tf.keras.Sequential()
-model.add(keras.Input(shape=(2,)))
+model.add(keras.Input(shape=(len(input_labels),)))
 
 model.add(layers.Dense(units=64, activation="relu"))
 model.add(layers.Dense(units=64, activation="relu"))
 
-model.add(layers.Dense(units=2))
+model.add(layers.Dense(units=len(predict_labels)))
 
 model.compile(
     optimizer=Adam(learning_rate),
-    loss='categorical_crossentropy'
+    loss="MeanSquaredError"
 )
 
 
 
-# model.fit(X_train, y_train, epochs=epochs, batch_size=batch_size)
+training_history = model.fit(X_train, y_train, epochs=epochs, batch_size=batch_size)
+
+
+#%% evaluating performance
+test_loss = model.evaluate(X_test, y_test)
+print(f"Test loss: {test_loss}")
+
+
+
+
+
+#%% plotting
+
+
+plt.close('all')
+figsize = [12, 8]
+fontsize = 18
+dpi = 200
+
+pylab.rcParams.update({
+    'figure.figsize': figsize,
+    'legend.fontsize': fontsize,
+    'axes.labelsize': fontsize,
+    'axes.titlesize': fontsize,
+    'xtick.labelsize': fontsize,
+    'ytick.labelsize': fontsize,
+    'savefig.dpi': dpi
+})
 
 
 
 
 
 
-# # plotting population size
-# fig = plt.figure(figsize=figsize)
-# plt.hist(raw_data["pop2018"], bins=20)
-# plt.title('pop2018')
-# #plt.savefig(r'../report/images/pop2018_hist.png')
+# plotting population size
+fig = plt.figure(figsize=figsize)
+plt.plot(training_history.history["loss"])
+plt.title('loss over epochs')
+plt.ylim([0, None])
+#plt.savefig(r'../report/images/pop2018_hist.png')
 
 
 
