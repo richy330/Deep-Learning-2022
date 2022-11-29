@@ -47,6 +47,14 @@ learning_rates = [
     ExponentialDecay(initial_learning_rate=0.0001, decay_steps=20, decay_rate=1, name=f'{0.0001}')
 ]
 
+n_hidden_neurons = [
+    [8, 8],
+    [32, 32],
+    [32, 8, 32]
+]
+
+    
+
 
 #%% adjusting plot appearance
 plt.close('all')
@@ -149,9 +157,8 @@ y_test = set_test[predict_labels]
 
 #%% building and training the models
 n_neurons = [
-    [len(input_labels), 8, 8, len(predict_labels)],
-    [len(input_labels), 32, 32, len(predict_labels)],
-    [len(input_labels), 32, 8, 32, len(predict_labels)]
+    [len(input_labels), *n, len(predict_labels)]
+    for n in n_hidden_neurons
 ]
 
 
@@ -168,50 +175,50 @@ evaluated_learning_rates = []
 # the combination of enumerate and itertools.product()
 n = 0
 for n_units, activation, optimizer, learning_rate in itertools.product(n_neurons, activation_functions, optimizers, learning_rates):
-
-    optimizer.learning_rate = learning_rate
-    model = create_model(n_units, activation)
-    model.compile(
-        optimizer=optimizer,
-        loss=cost_function
-    )
+    pass
+#     optimizer.learning_rate = learning_rate
+#     model = create_model(n_units, activation)
+#     model.compile(
+#         optimizer=optimizer,
+#         loss=cost_function
+#     )
     
 
-    training_history = model.fit(X_train, y_train, epochs=epochs, batch_size=batch_size)
-    training_histories.append(training_history)
+#     training_history = model.fit(X_train, y_train, epochs=epochs, batch_size=batch_size)
+#     training_histories.append(training_history)
     
     
 
-    validation_loss = model.evaluate(X_validate, y_validate)
-    validation_losses.append(validation_loss)
-    print(f"Test loss: {validation_loss}")
+#     validation_loss = model.evaluate(X_validate, y_validate)
+#     validation_losses.append(validation_loss)
+#     print(f"Test loss: {validation_loss}")
     
-    # we keep track of hyperparameters in these lists
-    evaluated_structures.append(n_units)
-    evaluated_activations.append(activation)
-    evaluated_optimizers.append(optimizer._name)
-    evaluated_learning_rates.append(learning_rate.name)
+#     # we keep track of hyperparameters in these lists
+#     evaluated_structures.append(n_units)
+#     evaluated_activations.append(activation)
+#     evaluated_optimizers.append(optimizer._name)
+#     evaluated_learning_rates.append(learning_rate.name)
 
 
 
-#%% plotting of training history for each hyperparameter combination
-    annotation_text = \
-        f"Structure: {n_units}" \
-        f"\nActivation: {activation}" \
-        f"\nOptimizer: {optimizer._name}" \
-        f"\nLearning rate: {learning_rate.name}" \
-        f"\nValidation Loss: {validation_loss:.5f}"
+# #%% plotting of training history for each hyperparameter combination
+#     annotation_text = \
+#         f"Structure: {n_units}" \
+#         f"\nActivation: {activation}" \
+#         f"\nOptimizer: {optimizer._name}" \
+#         f"\nLearning rate: {learning_rate.name}" \
+#         f"\nValidation Loss: {validation_loss:.5f}"
         
-    fig, ax = plt.subplots()
-    ax.plot(training_history.history["loss"])
-    plt.xlabel('epochs')
-    plt.ylabel('loss')
-    plt.ylim([0, None])
+#     fig, ax = plt.subplots()
+#     ax.plot(training_history.history["loss"])
+#     plt.xlabel('epochs')
+#     plt.ylabel('loss')
+#     plt.ylim([0, None])
     
-    ax.text(0.70, 0.95, annotation_text, transform=ax.transAxes, verticalalignment='top', fontsize=fontsize)
-    plt.savefig(r'../plots/training_evolution_{}_{}.png'.format(optimizer._name, n))
-    plt.show()
-    n += 1
+#     ax.text(0.70, 0.95, annotation_text, transform=ax.transAxes, verticalalignment='top', fontsize=fontsize)
+#     plt.savefig(r'../plots/training_evolution_{}_{}.png'.format(optimizer._name, n))
+#     plt.show()
+#     n += 1
 
     
 
@@ -237,7 +244,7 @@ y_train_best = pd.concat([y_train, y_validate], axis=0)
 training_history = final_model.fit(X_train_best, y_train_best, epochs=epochs, batch_size=batch_size)
 
 
-validation_loss = model.evaluate(X_test, y_test)
+validation_loss = final_model.evaluate(X_test, y_test)
 print(f"Test loss: {validation_loss}")
 
 
@@ -261,3 +268,27 @@ plt.savefig(r'../plots/training_evolution_{}.png'.format('best_model'))
 plt.show()
 
 
+
+#%% plotting predictions compared to real values
+X_compare = X_test[:1000]
+y_compare_predicted = final_model.predict(X_compare)
+
+fig, axs = plt.subplots(ncols=2)
+for n, label in enumerate(predict_labels):
+    ax = axs[n]
+    y_compare_real = y_test.iloc[:1000, n].to_numpy()
+    
+    
+    y_real_sortindex = np.argsort(y_compare_real)
+    y_real_sorted = y_compare_real[y_real_sortindex]
+    y_pred_sorted = y_compare_predicted[y_real_sortindex, n]
+    
+    
+
+    ax.plot(y_real_sorted, 'rx', label=f'real {label}, sorted')
+    ax.plot(y_pred_sorted, 'bx', label='corresponding predictions')
+    ax.legend()
+
+
+plt.savefig(r'../plots/prediction_vs_real_{}.png'.format(label))
+plt.close('all')
