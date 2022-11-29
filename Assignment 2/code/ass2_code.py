@@ -8,7 +8,7 @@ Created on Sun Nov  6 16:05:09 2022
 
 
 
-# required hack because of collision of .dlls on windows
+# required hack because of collision of .dlls on windows, probably due to tensorflow
 import os
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
@@ -29,15 +29,21 @@ from keras.optimizers import Adam, SGD
 from keras.losses import mean_squared_error
 
 
-
-
+#%% setting up hyperparameters
 epochs = 50
 batch_size = 64
 cost_function = mean_squared_error
-optimizers = [SGD]
-activation_functions = ['sigmoid', 'relu']
+optimizers = [
+    Adam(), 
+    SGD(), 
+    SGD(momentum=0.5, name='SGD-Mom')
+]
+activation_functions = [
+    'sigmoid', 
+    'relu'
+]
 learning_rates = [
-    ExponentialDecay(initial_learning_rate=0.001, decay_steps=20, decay_rate=0.9, name='ExponentialDecay'),
+    ExponentialDecay(initial_learning_rate=0.001, decay_steps=20, decay_rate=0.9, name='Exp-dec.'),
     ExponentialDecay(initial_learning_rate=0.0001, decay_steps=20, decay_rate=1, name=f'{0.0001}')
 ]
 
@@ -49,6 +55,8 @@ fontsize = 18
 dpi = 200
 
 
+
+
 pylab.rcParams.update({
     'figure.figsize': figsize,
     'legend.fontsize': fontsize,
@@ -58,11 +66,8 @@ pylab.rcParams.update({
     'ytick.labelsize': fontsize,
     'savefig.dpi': dpi,
     "text.usetex": True,
-    "font.family": "sans-serif",
-    "font.sans-serif": "Helvetica",
+    "font.family": "serif"
 })
-
-
 
 
 
@@ -76,6 +81,7 @@ def train_test_split(dataframe, training_fraction):
     return train_set, test_set
 
 
+
 def normalize(dataframe):
     data_max = dataframe.max().to_numpy()
     data_min = dataframe.min().to_numpy()
@@ -83,6 +89,7 @@ def normalize(dataframe):
 
     normalized_data = (dataframe - data_min) / delta_minmax 
     return normalized_data
+
 
 
 def create_model(n_units, activation):
@@ -102,7 +109,7 @@ def create_model(n_units, activation):
 
 
 
-#%% loading and preparing datasets
+#%% loading and preparing training-, validation- and test-datasets
 zip_datapath = r"../../data/social_capital_zip.csv"
 
 input_labels = [
@@ -151,15 +158,18 @@ n_neurons = [
 training_histories = []
 validation_losses = []
 
+# we keep track of evaluated hyperparameters in these lists
 evaluated_structures = []
 evaluated_activations = []
 evaluated_optimizers = []
 evaluated_learning_rates = []
 
+# we could eliminate this counting variable with the enumerate-function, but don't like
+# the combination of enumerate and itertools.product()
 n = 0
 for n_units, activation, optimizer, learning_rate in itertools.product(n_neurons, activation_functions, optimizers, learning_rates):
-    
-    optimizer = optimizer(learning_rate, momentum=0.5)
+
+    optimizer.learning_rate = learning_rate
     model = create_model(n_units, activation)
     model.compile(
         optimizer=optimizer,
@@ -176,7 +186,7 @@ for n_units, activation, optimizer, learning_rate in itertools.product(n_neurons
     validation_losses.append(validation_loss)
     print(f"Test loss: {validation_loss}")
     
-    
+    # we keep track of hyperparameters in these lists
     evaluated_structures.append(n_units)
     evaluated_activations.append(activation)
     evaluated_optimizers.append(optimizer._name)
@@ -184,7 +194,7 @@ for n_units, activation, optimizer, learning_rate in itertools.product(n_neurons
 
 
 
-#%% plotting
+#%% plotting of training history for each hyperparameter combination
     annotation_text = \
         f"Structure: {n_units}" \
         f"\nActivation: {activation}" \
@@ -192,24 +202,26 @@ for n_units, activation, optimizer, learning_rate in itertools.product(n_neurons
         f"\nLearning rate: {learning_rate.name}" \
         f"\nValidation Loss: {validation_loss:.5f}"
         
-    fig, ax = plt.subplots(figsize=figsize)
+    fig, ax = plt.subplots()
     ax.plot(training_history.history["loss"])
     plt.xlabel('epochs')
     plt.ylabel('loss')
+    plt.ylim([0, None])
     
-    ax.text(0.55, 0.95, annotation_text, transform=ax.transAxes, verticalalignment='top', fontsize=fontsize)
+    ax.text(0.70, 0.95, annotation_text, transform=ax.transAxes, verticalalignment='top', fontsize=fontsize)
     plt.savefig(r'../plots/training_evolution_{}_{}.png'.format(optimizer._name, n))
     plt.show()
     n += 1
-    
 
     
 
+    
 
-#%% testing the final, best performing model
+
+#%% testing the final, best performing model and plotting its training history
 n_units_best = [17, 32, 8, 32, 2]
 activation_best = 'relu'
-learning_rate_best = 0.0001
+learning_rate_best = learning_rates[1]
 optimizer_best = Adam(learning_rate=learning_rate_best)
 
 final_model = create_model(n_units_best, activation_best)
@@ -219,16 +231,17 @@ final_model.compile(
 )
 
 
+X_train_best = pd.concat([X_train, X_validate], axis=0)
+y_train_best = pd.concat([y_train, y_validate], axis=0)
+
+training_history = final_model.fit(X_train_best, y_train_best, epochs=epochs, batch_size=batch_size)
 
 
-training_history = final_model.fit(X_train, y_train, epochs=epochs, batch_size=batch_size)
-
-
-validation_loss = model.evaluate(X_validate, y_validate)
+validation_loss = model.evaluate(X_test, y_test)
 print(f"Test loss: {validation_loss}")
 
 
-#%% plotting
+#%% plotting the best performing model
 annotation_text = \
     f"Structure: {n_units_best}" \
     f"\nActivation: {activation_best}" \
@@ -236,12 +249,14 @@ annotation_text = \
     f"\nLearning rate: {learning_rate_best.name}" \
     f"\nValidation Loss: {validation_loss:.5f}"
     
-fig, ax = plt.subplots(figsize=figsize)
+fig, ax = plt.subplots()
 ax.plot(training_history.history["loss"])
 plt.xlabel('epochs')
 plt.ylabel('loss')
+plt.ylim([0, None])
+plt.grid()
 
-ax.text(0.55, 0.95, annotation_text, transform=ax.transAxes, verticalalignment='top', fontsize=fontsize)
+ax.text(0.70, 0.95, annotation_text, transform=ax.transAxes, verticalalignment='top', fontsize=fontsize)
 plt.savefig(r'../plots/training_evolution_{}.png'.format('best_model'))
 plt.show()
 
