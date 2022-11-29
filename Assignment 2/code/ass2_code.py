@@ -22,8 +22,16 @@ rng = np.random.default_rng()
 
 
 learning_rate = 0.0001
-epochs = 100
+epochs = 50
 batch_size = 64
+
+
+
+
+import os
+os.environ['KMP_DUPLICATE_LIB_OK']='True'
+
+
 
 #%% helper functions
 
@@ -72,6 +80,9 @@ cleaned_data = selected_data.dropna()
 
 normalized_data = normalize(cleaned_data)
 set_train, set_test = train_test_split(normalized_data, 0.8)
+set_train, set_validation = train_test_split(set_train, 0.8)
+
+
 
 X_train = set_train[input_labels]
 X_test = set_test[input_labels]
@@ -83,8 +94,8 @@ y_test = set_test[predict_labels]
 model = tf.keras.Sequential()
 model.add(keras.Input(shape=(len(input_labels),)))
 
-model.add(layers.Dense(units=8, activation="sigmoid"))
-model.add(layers.Dense(units=8, activation="sigmoid"))
+model.add(layers.Dense(units=16, activation="sigmoid"))
+model.add(layers.Dense(units=16, activation="sigmoid"))
 
 model.add(layers.Dense(units=len(predict_labels)))
 
@@ -109,20 +120,20 @@ print(f"Test loss: {test_loss}")
 #%% plotting
 
 
-plt.close('all')
+# plt.close('all')
 figsize = [12, 8]
-fontsize = 18
-dpi = 200
+# fontsize = 18
+# dpi = 200
 
-pylab.rcParams.update({
-    'figure.figsize': figsize,
-    'legend.fontsize': fontsize,
-    'axes.labelsize': fontsize,
-    'axes.titlesize': fontsize,
-    'xtick.labelsize': fontsize,
-    'ytick.labelsize': fontsize,
-    'savefig.dpi': dpi
-})
+# pylab.rcParams.update({
+#     'figure.figsize': figsize,
+#     'legend.fontsize': fontsize,
+#     'axes.labelsize': fontsize,
+#     'axes.titlesize': fontsize,
+#     'xtick.labelsize': fontsize,
+#     'ytick.labelsize': fontsize,
+#     'savefig.dpi': dpi
+# })
 
 
 
