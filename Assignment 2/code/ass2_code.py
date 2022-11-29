@@ -159,7 +159,7 @@ evaluated_learning_rates = []
 n = 0
 for n_units, activation, optimizer, learning_rate in itertools.product(n_neurons, activation_functions, optimizers, learning_rates):
     
-    optimizer = optimizer(learning_rate)
+    optimizer = optimizer(learning_rate, momentum=0.5)
     model = create_model(n_units, activation)
     model.compile(
         optimizer=optimizer,
@@ -206,5 +206,43 @@ for n_units, activation, optimizer, learning_rate in itertools.product(n_neurons
     
 
 
+#%% testing the final, best performing model
+n_units_best = [17, 32, 8, 32, 2]
+activation_best = 'relu'
+learning_rate_best = 0.0001
+optimizer_best = Adam(learning_rate=learning_rate_best)
+
+final_model = create_model(n_units_best, activation_best)
+final_model.compile(
+    optimizer=optimizer_best,
+    loss=cost_function
+)
+
+
+
+
+training_history = final_model.fit(X_train, y_train, epochs=epochs, batch_size=batch_size)
+
+
+validation_loss = model.evaluate(X_validate, y_validate)
+print(f"Test loss: {validation_loss}")
+
+
+#%% plotting
+annotation_text = \
+    f"Structure: {n_units_best}" \
+    f"\nActivation: {activation_best}" \
+    f"\nOptimizer: {optimizer_best._name}" \
+    f"\nLearning rate: {learning_rate_best.name}" \
+    f"\nValidation Loss: {validation_loss:.5f}"
+    
+fig, ax = plt.subplots(figsize=figsize)
+ax.plot(training_history.history["loss"])
+plt.xlabel('epochs')
+plt.ylabel('loss')
+
+ax.text(0.55, 0.95, annotation_text, transform=ax.transAxes, verticalalignment='top', fontsize=fontsize)
+plt.savefig(r'../plots/training_evolution_{}.png'.format('best_model'))
+plt.show()
 
 
