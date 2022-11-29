@@ -6,6 +6,11 @@ Created on Sun Nov  6 16:05:09 2022
 @author: richard
 """
 
+# required hack because of collision of .dlls on windows
+import os
+os.environ['KMP_DUPLICATE_LIB_OK']='True'
+
+
 
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -16,7 +21,7 @@ import tensorflow as tf
 from tensorflow import keras
 from keras import layers
 from keras.optimizers import Adam
-from keras.losses import log_cosh
+from keras.losses import log_cosh, mean_squared_error
 
 rng = np.random.default_rng()
 
@@ -24,12 +29,11 @@ rng = np.random.default_rng()
 learning_rate = 0.0001
 epochs = 50
 batch_size = 64
+cost_function = mean_squared_error
+optimizer = Adam(learning_rate)
 
 
 
-
-import os
-os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
 
 
@@ -85,32 +89,64 @@ set_train, set_validation = train_test_split(set_train, 0.8)
 
 
 X_train = set_train[input_labels]
+X_validate = set_validation[input_labels]
 X_test = set_test[input_labels]
+
 y_train = set_train[predict_labels]
+y_validate = set_validation[predict_labels]
 y_test = set_test[predict_labels]
 
 
-#%% building and training the model
-model = tf.keras.Sequential()
-model.add(keras.Input(shape=(len(input_labels),)))
+#%% building and training the models
 
-model.add(layers.Dense(units=16, activation="sigmoid"))
-model.add(layers.Dense(units=16, activation="sigmoid"))
 
-model.add(layers.Dense(units=len(predict_labels)))
+model1 = tf.keras.Sequential()
+model2 = tf.keras.Sequential()
+model3 = tf.keras.Sequential()
+model4 = tf.keras.Sequential()
 
-model.compile(
-    optimizer=Adam(learning_rate),
-    loss=log_cosh
+
+model1.add(keras.Input(shape=(len(input_labels),)))
+
+model1.add(layers.Dense(units=8, activation="relu"))
+model1.add(layers.Dense(units=8, activation="relu"))
+# model1.add(layers.Dense(units=16, activation="sigmoid"))
+
+model1.add(layers.Dense(units=len(predict_labels)))
+
+model1.compile(
+    optimizer=optimizer,
+    loss=cost_function
 )
 
 
 
-training_history = model.fit(X_train, y_train, epochs=epochs, batch_size=batch_size)
+
+model2.add(keras.Input(shape=(len(input_labels),)))
+
+model2.add(layers.Dense(units=8, activation="relu"))
+model2.add(layers.Dense(units=8, activation="relu"))
+# model1.add(layers.Dense(units=16, activation="sigmoid"))
+
+model2.add(layers.Dense(units=len(predict_labels)))
+
+model2.compile(
+    optimizer=optimizer,
+    loss=cost_function
+)
+
+
+
+
+
+
+
+
+training_history = model1.fit(X_train, y_train, epochs=epochs, batch_size=batch_size)
 
 
 #%% evaluating performance
-test_loss = model.evaluate(X_test, y_test)
+test_loss = model1.evaluate(X_validate, y_validate)
 print(f"Test loss: {test_loss}")
 
 
@@ -120,20 +156,20 @@ print(f"Test loss: {test_loss}")
 #%% plotting
 
 
-# plt.close('all')
+plt.close('all')
 figsize = [12, 8]
-# fontsize = 18
-# dpi = 200
+fontsize = 18
+dpi = 200
 
-# pylab.rcParams.update({
-#     'figure.figsize': figsize,
-#     'legend.fontsize': fontsize,
-#     'axes.labelsize': fontsize,
-#     'axes.titlesize': fontsize,
-#     'xtick.labelsize': fontsize,
-#     'ytick.labelsize': fontsize,
-#     'savefig.dpi': dpi
-# })
+pylab.rcParams.update({
+    'figure.figsize': figsize,
+    'legend.fontsize': fontsize,
+    'axes.labelsize': fontsize,
+    'axes.titlesize': fontsize,
+    'xtick.labelsize': fontsize,
+    'ytick.labelsize': fontsize,
+    'savefig.dpi': dpi
+})
 
 
 
@@ -144,7 +180,7 @@ figsize = [12, 8]
 fig = plt.figure(figsize=figsize)
 plt.plot(training_history.history["loss"])
 plt.title('loss over epochs')
-plt.ylim([0, None])
+plt.ylim([0, 0.1])
 #plt.savefig(r'../report/images/pop2018_hist.png')
 
 
