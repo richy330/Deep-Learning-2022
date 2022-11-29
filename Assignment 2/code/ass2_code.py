@@ -3,13 +3,17 @@
 """
 Created on Sun Nov  6 16:05:09 2022
 
-@author: richard
+@author: richard amering, michael mitterlindner
 """
+
+
 
 # required hack because of collision of .dlls on windows
 import os
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
+
+import itertools
 
 
 import pandas as pd
@@ -17,28 +21,52 @@ import matplotlib.pyplot as plt
 import matplotlib.pylab as pylab
 import numpy as np
 
-import tensorflow as tf
 from tensorflow import keras
+from tensorflow.keras.optimizers.schedules import ExponentialDecay
+
 from keras import layers
-from keras.optimizers import Adam
-from keras.losses import log_cosh, mean_squared_error
-
-rng = np.random.default_rng()
+from keras.optimizers import Adam, SGD
+from keras.losses import mean_squared_error
 
 
-learning_rate = 0.0001
+
+
 epochs = 50
 batch_size = 64
 cost_function = mean_squared_error
-optimizer = Adam(learning_rate)
+optimizers = [SGD]
+activation_functions = ['sigmoid', 'relu']
+learning_rates = [
+    ExponentialDecay(initial_learning_rate=0.001, decay_steps=20, decay_rate=0.9, name='ExponentialDecay'),
+    ExponentialDecay(initial_learning_rate=0.0001, decay_steps=20, decay_rate=1, name=f'{0.0001}')
+]
 
+
+#%% adjusting plot appearance
+plt.close('all')
+figsize = [12, 8]
+fontsize = 18
+dpi = 200
+
+
+pylab.rcParams.update({
+    'figure.figsize': figsize,
+    'legend.fontsize': fontsize,
+    'axes.labelsize': fontsize,
+    'axes.titlesize': fontsize,
+    'xtick.labelsize': fontsize,
+    'ytick.labelsize': fontsize,
+    'savefig.dpi': dpi,
+    "text.usetex": True,
+    "font.family": "sans-serif",
+    "font.sans-serif": "Helvetica",
+})
 
 
 
 
 
 #%% helper functions
-
 def train_test_split(dataframe, training_fraction):
     n_total_examples = len(dataframe)
     n_training_examples = int(n_total_examples*training_fraction)
@@ -55,6 +83,21 @@ def normalize(dataframe):
 
     normalized_data = (dataframe - data_min) / delta_minmax 
     return normalized_data
+
+
+def create_model(n_units, activation):
+    n_inputs, *n_units, n_outputs = n_units
+    model = keras.Sequential()
+    
+    model.add(keras.Input(shape=(n_inputs,)))
+    for n_neurons in n_units:
+        model.add(layers.Dense(units=n_neurons, activation=activation))
+    model.add(layers.Dense(units=n_outputs))
+    
+    return model
+
+
+
 
 
 
@@ -98,120 +141,70 @@ y_test = set_test[predict_labels]
 
 
 #%% building and training the models
+n_neurons = [
+    [len(input_labels), 8, 8, len(predict_labels)],
+    [len(input_labels), 32, 32, len(predict_labels)],
+    [len(input_labels), 32, 8, 32, len(predict_labels)]
+]
 
 
-model1 = tf.keras.Sequential()
-model2 = tf.keras.Sequential()
-model3 = tf.keras.Sequential()
-model4 = tf.keras.Sequential()
+training_histories = []
+validation_losses = []
 
+evaluated_structures = []
+evaluated_activations = []
+evaluated_optimizers = []
+evaluated_learning_rates = []
 
-model1.add(keras.Input(shape=(len(input_labels),)))
+n = 0
+for n_units, activation, optimizer, learning_rate in itertools.product(n_neurons, activation_functions, optimizers, learning_rates):
+    
+    optimizer = optimizer(learning_rate)
+    model = create_model(n_units, activation)
+    model.compile(
+        optimizer=optimizer,
+        loss=cost_function
+    )
+    
 
-model1.add(layers.Dense(units=8, activation="relu"))
-model1.add(layers.Dense(units=8, activation="relu"))
-# model1.add(layers.Dense(units=16, activation="sigmoid"))
+    training_history = model.fit(X_train, y_train, epochs=epochs, batch_size=batch_size)
+    training_histories.append(training_history)
+    
+    
 
-model1.add(layers.Dense(units=len(predict_labels)))
-
-model1.compile(
-    optimizer=optimizer,
-    loss=cost_function
-)
-
-
-
-
-model2.add(keras.Input(shape=(len(input_labels),)))
-
-model2.add(layers.Dense(units=8, activation="relu"))
-model2.add(layers.Dense(units=8, activation="relu"))
-# model1.add(layers.Dense(units=16, activation="sigmoid"))
-
-model2.add(layers.Dense(units=len(predict_labels)))
-
-model2.compile(
-    optimizer=optimizer,
-    loss=cost_function
-)
-
-
-
-
-
-
-
-
-training_history = model1.fit(X_train, y_train, epochs=epochs, batch_size=batch_size)
-
-
-#%% evaluating performance
-test_loss = model1.evaluate(X_validate, y_validate)
-print(f"Test loss: {test_loss}")
-
-
+    validation_loss = model.evaluate(X_validate, y_validate)
+    validation_losses.append(validation_loss)
+    print(f"Test loss: {validation_loss}")
+    
+    
+    evaluated_structures.append(n_units)
+    evaluated_activations.append(activation)
+    evaluated_optimizers.append(optimizer._name)
+    evaluated_learning_rates.append(learning_rate.name)
 
 
 
 #%% plotting
+    annotation_text = \
+        f"Structure: {n_units}" \
+        f"\nActivation: {activation}" \
+        f"\nOptimizer: {optimizer._name}" \
+        f"\nLearning rate: {learning_rate.name}" \
+        f"\nValidation Loss: {validation_loss:.5f}"
+        
+    fig, ax = plt.subplots(figsize=figsize)
+    ax.plot(training_history.history["loss"])
+    plt.xlabel('epochs')
+    plt.ylabel('loss')
+    
+    ax.text(0.55, 0.95, annotation_text, transform=ax.transAxes, verticalalignment='top', fontsize=fontsize)
+    plt.savefig(r'../plots/training_evolution_{}_{}.png'.format(optimizer._name, n))
+    plt.show()
+    n += 1
+    
+
+    
 
 
-plt.close('all')
-figsize = [12, 8]
-fontsize = 18
-dpi = 200
-
-pylab.rcParams.update({
-    'figure.figsize': figsize,
-    'legend.fontsize': fontsize,
-    'axes.labelsize': fontsize,
-    'axes.titlesize': fontsize,
-    'xtick.labelsize': fontsize,
-    'ytick.labelsize': fontsize,
-    'savefig.dpi': dpi
-})
-
-
-
-
-
-
-# plotting population size
-fig = plt.figure(figsize=figsize)
-plt.plot(training_history.history["loss"])
-plt.title('loss over epochs')
-plt.ylim([0, 0.1])
-#plt.savefig(r'../report/images/pop2018_hist.png')
-
-
-
-# # plotting histogramms of three chosen datasets
-# for id, series in zip(investigated_series_ids, series):
-#     fig = plt.figure()
-#     plt.hist(series, bins=20)
-#     plt.title(id)
-#     #plt.savefig(r'../report/images/{}_hist.png'.format(id))
-
-
-
-# # plotting a 3D scatter plot to see if 3D data still appears gaussian
-# fig = plt.figure()
-# ax = fig.add_subplot(projection='3d')
-
-# ax.set_xlabel(investigated_series_ids[0])
-# ax.set_ylabel(investigated_series_ids[1])
-# ax.set_zlabel(investigated_series_ids[2])
-
-# ax.scatter(ds1, ds2, ds3)
-# plt.title("3D scatter plot of the chosen data-series")
-# #plt.savefig(r'../report/images/3Dscatter.png')
-
-
-
-
-# # calculating the mean of the chosen 3D data-set
-# df = ds1.to_frame().join(ds2).join(ds3)
-
-# mean = df.mean()
 
 
