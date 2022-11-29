@@ -65,7 +65,7 @@ pylab.rcParams.update({
     'xtick.labelsize': fontsize,
     'ytick.labelsize': fontsize,
     'savefig.dpi': dpi,
-    "text.usetex": True,
+    "text.usetex": False,
     "font.family": "serif"
 })
 
