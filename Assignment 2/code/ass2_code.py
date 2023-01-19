@@ -42,6 +42,7 @@ activation_functions = [
     'sigmoid', 
     'relu'
 ]
+# a learning rate with decay_rate=1 is constant. This makes the following code more consistent
 learning_rates = [
     ExponentialDecay(initial_learning_rate=0.001, decay_steps=20, decay_rate=0.9, name='Exp-dec.'),
     ExponentialDecay(initial_learning_rate=0.0001, decay_steps=20, decay_rate=1, name=f'{0.0001}')
@@ -73,7 +74,7 @@ pylab.rcParams.update({
     'xtick.labelsize': fontsize,
     'ytick.labelsize': fontsize,
     'savefig.dpi': dpi,
-    "text.usetex": False,
+    "text.usetex": True,
     "font.family": "serif"
 })
 
@@ -165,7 +166,7 @@ n_neurons = [
 training_histories = []
 validation_losses = []
 
-# we keep track of evaluated hyperparameters in these lists
+# we keep track of evaluated hyperparameters in thes following lists
 evaluated_structures = []
 evaluated_activations = []
 evaluated_optimizers = []
@@ -175,50 +176,49 @@ evaluated_learning_rates = []
 # the combination of enumerate and itertools.product()
 n = 0
 for n_units, activation, optimizer, learning_rate in itertools.product(n_neurons, activation_functions, optimizers, learning_rates):
-    pass
-#     optimizer.learning_rate = learning_rate
-#     model = create_model(n_units, activation)
-#     model.compile(
-#         optimizer=optimizer,
-#         loss=cost_function
-#     )
+    optimizer.learning_rate = learning_rate
+    model = create_model(n_units, activation)
+    model.compile(
+        optimizer=optimizer,
+        loss=cost_function
+    )
     
 
-#     training_history = model.fit(X_train, y_train, epochs=epochs, batch_size=batch_size)
-#     training_histories.append(training_history)
+    training_history = model.fit(X_train, y_train, epochs=epochs, batch_size=batch_size)
+    training_histories.append(training_history)
     
     
 
-#     validation_loss = model.evaluate(X_validate, y_validate)
-#     validation_losses.append(validation_loss)
-#     print(f"Test loss: {validation_loss}")
+    validation_loss = model.evaluate(X_validate, y_validate)
+    validation_losses.append(validation_loss)
+    print(f"Test loss: {validation_loss}")
     
-#     # we keep track of hyperparameters in these lists
-#     evaluated_structures.append(n_units)
-#     evaluated_activations.append(activation)
-#     evaluated_optimizers.append(optimizer._name)
-#     evaluated_learning_rates.append(learning_rate.name)
+    # we keep track of hyperparameters in these lists
+    evaluated_structures.append(n_units)
+    evaluated_activations.append(activation)
+    evaluated_optimizers.append(optimizer._name)
+    evaluated_learning_rates.append(learning_rate.name)
 
 
 
-# #%% plotting of training history for each hyperparameter combination
-#     annotation_text = \
-#         f"Structure: {n_units}" \
-#         f"\nActivation: {activation}" \
-#         f"\nOptimizer: {optimizer._name}" \
-#         f"\nLearning rate: {learning_rate.name}" \
-#         f"\nValidation Loss: {validation_loss:.5f}"
+#%% plotting of training history for each hyperparameter combination
+    annotation_text = \
+        f"Structure: {n_units}" \
+        f"\nActivation: {activation}" \
+        f"\nOptimizer: {optimizer._name}" \
+        f"\nLearning rate: {learning_rate.name}" \
+        f"\nValidation Loss: {validation_loss:.5f}"
         
-#     fig, ax = plt.subplots()
-#     ax.plot(training_history.history["loss"])
-#     plt.xlabel('epochs')
-#     plt.ylabel('loss')
-#     plt.ylim([0, None])
+    fig, ax = plt.subplots()
+    ax.plot(training_history.history["loss"])
+    plt.xlabel('epochs')
+    plt.ylabel('loss')
+    plt.ylim([0, None])
     
-#     ax.text(0.70, 0.95, annotation_text, transform=ax.transAxes, verticalalignment='top', fontsize=fontsize)
-#     plt.savefig(r'../plots/training_evolution_{}_{}.png'.format(optimizer._name, n))
-#     plt.show()
-#     n += 1
+    ax.text(0.70, 0.95, annotation_text, transform=ax.transAxes, verticalalignment='top', fontsize=fontsize)
+    plt.savefig(r'../plots/training_evolution_{}_{}.png'.format(optimizer._name, n))
+    plt.show()
+    n += 1
 
     
 
